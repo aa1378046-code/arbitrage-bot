@@ -79,7 +79,7 @@ def bybit_request(params=None):
         "Content-Type": "application/json"
     }
 
-    url = "https://api.bybit.com/v5/market/tickers"
+    url = "https://api.bytick.com/v5/market/tickers"
     proxies = PROXY if USE_PROXY else None
     response = SESSION.get(url, params=params, headers=headers, timeout=TIMEOUT_BYBIT, proxies=proxies)
     return response.json()
@@ -127,7 +127,7 @@ def get_updates(offset):
 # ===== ФУНКЦИИ ДАННЫХ =====
 def get_funding(symbol):
     try:
-        url = f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={symbol}"
+        url = f"https://api.bytick.com/v5/market/tickers?category=linear&symbol={symbol}"
         response = SESSION.get(url, timeout=TIMEOUT_BYBIT)
         data = response.json()
         if data.get("retCode") == 0:
@@ -139,13 +139,13 @@ def get_funding(symbol):
 
 def get_basis(symbol):
     try:
-        future_url = f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={symbol}"
+        future_url = f"https://api.bytick.com/v5/market/tickers?category=linear&symbol={symbol}"
         future_data = SESSION.get(future_url, timeout=TIMEOUT_BYBIT).json()
         if future_data.get("retCode") != 0:
             return None
         future_price = float(future_data["result"]["list"][0]["lastPrice"])
 
-        spot_url = f"https://api.bybit.com/v5/market/tickers?category=spot&symbol={symbol}"
+        spot_url = f"https://api.bytick.com/v5/market/tickers?category=spot&symbol={symbol}"
         spot_data = SESSION.get(spot_url, timeout=TIMEOUT_BYBIT).json()
         if spot_data.get("retCode") != 0:
             return None
@@ -160,7 +160,7 @@ def get_basis(symbol):
 def get_price(symbol):
     try:
         proxies = PROXY if USE_PROXY else None
-        url = f"https://api.bybit.com/v5/market/tickers?category=spot&symbol={symbol}"
+        url = f"https://api.bytick.com/v5/market/tickers?category=spot&symbol={symbol}"
         response = SESSION.get(url, timeout=TIMEOUT_BYBIT, proxies=proxies)
         data = response.json()
         if data.get("retCode") == 0:
