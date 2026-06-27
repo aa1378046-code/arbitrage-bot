@@ -5,11 +5,6 @@ import threading
 import hmac
 import hashlib
 from datetime import datetime, timedelta
-import os
-os.environ['HTTP_PROXY'] = ''
-os.environ['HTTPS_PROXY'] = ''
-os.environ['http_proxy'] = ''
-os.environ['https_proxy'] = ''
 
 # ===== НАСТРОЙКИ TELEGRAM =====
 TELEGRAM_TOKEN = "8142613258:AAEuvhv7LgvFbsXgsKZzzYrjxJWrpPsi8YQ"
@@ -132,7 +127,9 @@ def get_updates(offset):
 # ===== ФУНКЦИИ ДАННЫХ =====
 def get_funding(symbol):
     try:
-        data = bybit_request({"symbol": symbol})
+        url = f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={symbol}"
+        response = SESSION.get(url, timeout=TIMEOUT_BYBIT)
+        data = response.json()
         if data.get("retCode") == 0:
             return float(data["result"]["list"][0]["fundingRate"]) * 100
     except Exception as e:
@@ -142,15 +139,14 @@ def get_funding(symbol):
 
 def get_basis(symbol):
     try:
-        future_data = bybit_request({"symbol": symbol})
+        future_url = f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={symbol}"
+        future_data = SESSION.get(future_url, timeout=TIMEOUT_BYBIT).json()
         if future_data.get("retCode") != 0:
             return None
         future_price = float(future_data["result"]["list"][0]["lastPrice"])
 
-        proxies = PROXY if USE_PROXY else None
         spot_url = f"https://api.bybit.com/v5/market/tickers?category=spot&symbol={symbol}"
-        spot_response = SESSION.get(spot_url, timeout=TIMEOUT_BYBIT, proxies=proxies)
-        spot_data = spot_response.json()
+        spot_data = SESSION.get(spot_url, timeout=TIMEOUT_BYBIT).json()
         if spot_data.get("retCode") != 0:
             return None
         spot_price = float(spot_data["result"]["list"][0]["lastPrice"])
