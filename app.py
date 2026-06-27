@@ -129,6 +129,7 @@ def get_funding(symbol):
     try:
         url = f"https://api.bytick.com/v5/market/tickers?category=linear&symbol={symbol}"
         response = SESSION.get(url, timeout=TIMEOUT_BYBIT)
+        print(f"DEBUG funding {symbol}: status={response.status_code} text={response.text[:200]}")
         data = response.json()
         if data.get("retCode") == 0:
             return float(data["result"]["list"][0]["fundingRate"]) * 100
