@@ -139,7 +139,7 @@ def get_next_funding_time():
 
 
 # ===== АНАЛИЗ =====
-def analyze_symbol(ticker):
+def analyze_symbol(ticker, debug=False):
     symbol = ticker.get("symbol", "")
     if not symbol.endswith("USDT"):
         return None
@@ -157,25 +157,31 @@ def analyze_symbol(ticker):
 
     minutes_to_funding = get_minutes_to_funding()
     if minutes_to_funding < MIN_MINUTES_TO_FUNDING:
+        if debug: print(f"{symbol}: ❌ время до выплаты {minutes_to_funding:.0f} мин < {MIN_MINUTES_TO_FUNDING}")
         return None
 
     spot_price = get_spot_price(symbol)
     if not spot_price:
+        if debug: print(f"{symbol}: ❌ нет спот цены")
         return None
     basis = (future_price - spot_price) / spot_price * 100
     if basis > MAX_SPREAD or basis < -0.1:
+        if debug: print(f"{symbol}: ❌ базис {basis:.3f}% (макс {MAX_SPREAD}%)")
         return None
 
     history = get_funding_history(symbol, 5)
     if not history:
+        if debug: print(f"{symbol}: ❌ нет истории фандинга")
         return None
     positive_periods = sum(1 for x in history if x > 0)
     if positive_periods < MIN_FUNDING_PERIODS:
+        if debug: print(f"{symbol}: ❌ положительных периодов {positive_periods} < {MIN_FUNDING_PERIODS}")
         return None
     avg_funding = sum(history) / len(history)
 
     price_change_1h = get_kline_change(symbol)
     if price_change_1h and price_change_1h > MAX_PRICE_CHANGE_1H:
+        if debug: print(f"{symbol}: ❌ волатильность {price_change_1h:.2f}% > {MAX_PRICE_CHANGE_1H}%")
         return None
 
     ob_spread, ask, bid = get_orderbook_spread(symbol)
@@ -188,6 +194,7 @@ def analyze_symbol(ticker):
     net_profit = funding - total_fees / 2
 
     if net_profit < MIN_PROFIT_AFTER_FEES:
+        if debug: print(f"{symbol}: ❌ прибыль {net_profit:.4f}% < {MIN_PROFIT_AFTER_FEES}% (комиссии съедают)")
         return None
 
     score = 10
@@ -200,6 +207,7 @@ def analyze_symbol(ticker):
     if avg_funding < funding * 0.7: score -= 1
 
     if score < MIN_RISK_SCORE:
+        if debug: print(f"{symbol}: ❌ оценка риска {score} < {MIN_RISK_SCORE}")
         return None
 
     predicted_funding = round(avg_funding * 0.9, 4)
@@ -534,7 +542,8 @@ def run_scan():
             passed_volume += 1
         if funding >= MIN_FUNDING and volume_24h >= MIN_VOLUME_24H:
             passed_time += 1
-        result = analyze_symbol(ticker)
+            print(f"DEBUG {symbol}: funding={funding:.4f}% vol={volume_24h/1e6:.1f}M")
+        result = analyze_symbol(ticker, debug=(funding >= MIN_FUNDING and volume_24h >= MIN_VOLUME_24H))
         if result:
             signals.append(result)
         time.sleep(0.15)
