@@ -511,14 +511,43 @@ def run_scan():
         return
 
     signals = []
+    passed_funding = 0
+    passed_volume = 0
+    passed_time = 0
+    total = 0
+
     for ticker in tickers:
         symbol = ticker.get("symbol", "")
+        if not symbol.endswith("USDT"):
+            continue
         if symbol in active_positions:
             continue
+        total += 1
+        try:
+            funding = float(ticker.get("fundingRate", 0)) * 100
+            volume_24h = float(ticker.get("turnover24h", 0))
+        except:
+            continue
+        if funding >= MIN_FUNDING:
+            passed_funding += 1
+        if volume_24h >= MIN_VOLUME_24H:
+            passed_volume += 1
+        if funding >= MIN_FUNDING and volume_24h >= MIN_VOLUME_24H:
+            passed_time += 1
         result = analyze_symbol(ticker)
         if result:
             signals.append(result)
         time.sleep(0.15)
+
+    debug_msg = (
+        f"🔍 Сканирование завершено\n"
+        f"Всего пар: {total}\n"
+        f"Прошли фандинг (>{MIN_FUNDING}%): {passed_funding}\n"
+        f"Прошли объём (>${MIN_VOLUME_24H/1e6:.0f}M): {passed_volume}\n"
+        f"Прошли оба фильтра: {passed_time}\n"
+        f"Итого сигналов: {len(signals)}"
+    )
+    send_telegram(debug_msg, disable_notification=True)
 
     if not signals:
         send_telegram(
